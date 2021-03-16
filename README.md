@@ -6,6 +6,10 @@ TairString 是阿里巴巴 Tair 团队开发并开源的一个 redis module，�
 
 <br/>
 
+同时，我们还开源了一个增强型的hash结构，它可以给field设置过期时间和版本号，具体可参见[这里](https://github.com/alibaba/TairHash)
+
+<br/>
+
 # CAS/CAD - Redis 原生 String 的增强
 
 ## 命令详解

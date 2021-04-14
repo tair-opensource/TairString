@@ -487,7 +487,7 @@ OK
 1) "bzz"
 2) (integer) 2
 127.0.0.1:6379> EXCAS foo bee 1
-1) ERR update version is stale  # 注意这里返回的是简单字符串（返回错误类型会导致 Jedis 抛异常）
+1) ERR update version is stale   
 2) "bzz"
 3) (integer) 2
 127.0.0.1:6379>
@@ -540,7 +540,7 @@ Grammar and complexity：
 
 Command description：
 
-> GAE（Get And Expire），返回 TairString 的 value+version+flags，同时设置 key 的 expire. **该命令不会自增 version**  
+> GAE（Get And Expire）, **This command will not increment version**  
 
 Parameter Description：
 > **key**: The key used to locate the string       
@@ -573,7 +573,7 @@ OK
 
 <br/>
   
-## Compile
+## BUILD
 
 ```
 mkdir build  

@@ -1,47 +1,46 @@
 # TairString
-TairString 是阿里巴巴 Tair 团队开发并开源的一个 redis module，主要包含两个功能：
 
-- 对 redis 原生 string 进行功能增强，增加了 CAS/CAD 两个命令
-- 新增数据类型`exstrtype`， 和原生 string 相比，其 value 上可以指定 version，从而可以方便的实现分布式锁等功能，同时 value 上还可以设置 flags，以支持 memcached 协议
+## Introduction  [中文说明](README-CN.md)
+TairString is a redis module developed and open sourced by the Alibaba Tair team, which mainly contains two functions:
 
-<br/>
-
-同时，我们还开源了一个增强型的hash结构，它可以给field设置过期时间和版本号，具体可参见[这里](https://github.com/alibaba/TairHash)
+- Enhance the function of redis string, and add two CAS/CAD commands
+- The new data type `exstrtype` is added. Compared with the redis string, the version can be specified on its value, so that functions such as distributed locks can be easily implemented. At the same time, flags can be set on the value to support the memcached protocol.
 
 <br/>
 
-# CAS/CAD - Redis 原生 String 的增强
+At the same time, we have also open sourced an enhanced hash structure, which can set the expiration time and version number for the field. For details, please refer to [here](https://github.com/alibaba/TairHash)
 
-## 命令详解
+<br/>
+
+# CAS/CAD - Redis string enhancement
 
 ### CAS
 
-#### 语法及复杂度：
+#### Grammar and complexity：
 
 > CAS <Key> <oldvalue> <newvalue> [EX seconds][exat timestamp] [PX milliseconds][pxat timestamp]  
-> 时间复杂度：O(1)
+> time complexity: O(1)
 
-#### 命令描述：
+#### Command description:
 
-> CAS（Compare And Set），当 key 对应的 string 当前值和 oldvalue 相等时才将其值设置为 newvalue
+> CAS（Compare And Set），Set its value to newvalue when the current value of the string corresponding to key is equal to oldvalue
 
-#### 参数描述：
+#### Parameter Description:
 
-> **key**: 用于定位 string 的键  
-> **oldvalue**: 只有 string 当前值和 oldvalue 相等时才允许修改其值  
-> **newvalue**：string 当前值和 oldvalue 相等时将值设置为 newvalue  
-> **EX**：秒级相对过期时间  
-> **EXAT**：秒级绝对过期时间  
-> **PX**：毫秒级相对过期时间  
-> **PXAT**：毫秒级绝对过期时间
+> **key**: The key used to locate the string    
+> **oldvalue**: Only when the current value of string and oldvalue are equal can its value be modified    
+> **newvalue**：Set the value to newvalue when the current value of string   and oldvalue are equal  
+> **EX**：Relative expiration time in seconds      
+> **EXAT**：Absolute expiration time in seconds    
+> **PX**：Relative expiration time in milliseconds    
+> **PXAT**：Millisecond absolute expiration time   
 
-#### 返回值：
+#### Return value：
 
-> 返回类型：Long  
-> 成功：成功更新值返回 1，key 不存在返回-1，更新值失败返回 0  
-> 错误（如语法错误）：返回对应异常信息
+> Type：Long    
+> Returns 1 if the value is successfully updated, -1 if the key does not exist, and 0 if the value fails to be updated   
 
-#### 使用示例：
+#### Usage example：
 
 ```shell
 127.0.0.1:6379> SET foo bar
@@ -68,27 +67,26 @@ OK
 
 ### CAD
 
-#### 语法及复杂度：
+#### Grammar and complexity：
 
 > CAD \<key\> \<value\>  
-> 时间复杂度：O(1)
+> time complexity: O(1)
 
-#### 命令描述：
+#### Command description：
 
-> CAD（Compare And Delete），当 value 和引擎中 value 相等时候删除 Key
+> CAD（Compare And Delete），Delete the Key when the value is equal to the value in the engine  
 
-#### 参数描述：
+#### Parameter Description：
 
-> **key**: 用于定位 string 的键  
-> **value**: 只有 string 当前值和 value 相等时才允许删除
+> **key**: The key used to locate the string      
+> **value**: Delete only when the current value of string and value are equal  
 
-#### 返回值：
+#### Return value：
 
-> 返回类型：Long  
-> 成功：成功删除 key 返回 1，key 不存在返回-1，删除 key 失败返回 0  
-> 错误（如语法错误）：返回对应异常信息
+> Type：Long  
+> Return 1 if the key is successfully deleted, -1 if the key does not exist, and 0 if the key is deleted
 
-#### 使用示例：
+#### Usage example：
 
 ```shell
 127.0.0.1:6379> SET foo bar
@@ -105,11 +103,9 @@ OK
 
 <br/>
 
-# exstrtype - 一种带版本号和兼容 memcached 语义的 String
+# exstrtype - A String with version and compatible memcached protocol
 
-## 快速开始
-
-### 增删改查
+## Quick start
 
 ```shell
 127.0.0.1:6379> EXSET foo 100
@@ -147,56 +143,55 @@ OK
 (nil)
 ```
 
-## 命令介绍
+## Command introduction
 
-## 命令总览
+## Command overview
 
-| 命令          | 语法                                                                                                                                                                             | 含义                                                                                                              |
+| Command         |Grammar                                                                                                                                                                             | Details                                                                                                              |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| EXSET         | EXSET \<key\> \<value\> [EX time][px time] [EXAT time][pxat time] [NX &#124; XX][ver version &#124; abs version] [FLAGS flags][withversion]                                      | 将 value 保存到 key 中，各参数含义见后面具体解释。                                                                |
-| EXGET         | EXGET \<key\> [WITHFLAGS]                                                                                                                                                        | 返回 TairStr 的 value + version                                                                                   |
-| EXSETVER      | EXSETVER \<key\> \<version\>                                                                                                                                                     | 直接对一个 key 设置 version，类似于 EXSET ABS                                                                     |
-| EXINCRBY      | EXINCRBY \<key\> \<num\> [EX time][px time] [EXAT time][exat time] [PXAT time][nx &#124; xx] [VER version &#124; ABS version][min minval] [MAX maxval][nonegative] [WITHVERSION] | 对 Key 做自增自减操作，num 的范围为 long。                                                                        |
-| EXINCRBYFLOAT | EXINCRBYFLOAT \<key\> \<num\> [EX time][px time] [EXAT time][exat time] [PXAT time][nx &#124; xx] [VER version &#124; ABS version][min minval] [MAX maxval]                      | 对 Key 做自增自减操作，num 的范围为 double。                                                                      |
-| EXCAS         | EXCAS \<key\> \<newvalue\> \<version\>                                                                                                                                           | 指定 version 将 value 更新，当引擎中的 version 和指定的相同时才更新成功，不成功会返回旧的 value 和 version。      |
-| EXCAD         | EXCAD \<key\> \<version\>                                                                                                                                                        | 当指定 version 和引擎中 version 相等时候删除 Key，否则失败。                                                      |
-| EXAPPEND      | EXAPPEND \<key\> \<value\> [NX\|XX][ver version \| abs version]                                                                                                                  | 对 key 做字符串 append 操作                                                                                       |
-| EXPREPEND     | EXPREPEND \<key\> \<value\> [NX\|XX][ver version \| abs version]                                                                                                                 | 对 key 做字符串 prepend 操作                                                                                      |
-| EXGAE         | EXGAE \<key\> [EX time][px time] [EXAT time][pxat time]                                                                                                                          | GAE（Get And Expire），返回 TairString 的 value+version+flags，同时设置 key 的 expire. **该命令不会自增 version** |
-|               |                                                                                                                                                                                  |                                                                                                                   |
+| EXSET         | EXSET \<key\> \<value\> [EX time][px time] [EXAT time][pxat time] [NX &#124; XX][ver version &#124; abs version] [FLAGS flags][withversion]                                      | Save the value to the key. The meaning of each parameter is explained later                              |
+| EXGET         | EXGET \<key\> [WITHFLAGS]                                                                                                                                                        | Return the value and version of TairString                                      |
+| EXSETVER      | EXSETVER \<key\> \<version\>                                                                                                                                                     | Set the version directly to a key, which is equivalent to EXSET ABS                                                                 |
+| EXINCRBY      | EXINCRBY \<key\> \<num\> [EX time][px time] [EXAT time][exat time] [PXAT time][nx &#124; xx] [VER version &#124; ABS version][min minval] [MAX maxval][nonegative] [WITHVERSION] | Auto-increment or decrement the Key                             |
+| EXINCRBYFLOAT | EXINCRBYFLOAT \<key\> \<num\> [EX time][px time] [EXAT time][exat time] [PXAT time][nx &#124; xx] [VER version &#124; ABS version][min minval] [MAX maxval]                      | Do the increment and decrement operations on Key, and the range of num is double                                   |
+| EXCAS         | EXCAS \<key\> \<newvalue\> \<version\>                                                                                                                                           | Specify version to update the value. The update is successful when the version in the engine is the same as the specified one. If it fails, the old value and version will be returned      |
+| EXCAD         | EXCAD \<key\> \<version\>                                                                                                                                                        | Delete the Key when the specified version is equal to the version in the engine, otherwise it will fail                                |
+| EXAPPEND      | EXAPPEND \<key\> \<value\> [NX\|XX][ver version \| abs version]                                                                                                                  | Append string to key|
+| EXPREPEND     | EXPREPEND \<key\> \<value\> [NX\|XX][ver version \| abs version]                                                                                                                 | Perform string prepend operation on key|
+| EXGAE         | EXGAE \<key\> [EX time][px time] [EXAT time][pxat time] | GAE(Get And Expire),Return the value+version+flags of TairString, and set the expire of the key. **This command will not increase version** |
+|               |||
 
 <br/>
 
 ## EXSET
 
-语法及复杂度：
+Grammar and complexity：
 
 > EXSET \<key\> \<value\> [EX time][px time] [EXAT time][exat time] [PXAT time][nx | xx] [VER version | ABS version][flags flags] [WITHVERSION]  
-> 时间复杂度：O(1)
+> time complexity：O(1)
 
-命令描述：  
-> 将 value 保存到 key 中
+Command description：  
+> Save the value to the key
 
-参数描述：  
-> **key**: 用于定位 TairString 的键  
-> **value**: 要设置的 TairString 的值  
-> **EX**：秒级相对过期时间  
-> **EXAT**：秒级绝对过期时间  
-> **PX**：毫秒级相对过期时间  
-> **PXAT**：毫秒级绝对过期时间  
-> **NX**：当数据不存在时写入    
-> **XX**：当数据存在时写入  
-> **VER**：版本号，如果数据存在，和已经存在的数据的版本号做比较，如果相等，写入，并版本号加 1；如果不相等，返回出错；如果数据不存在，忽略传入的版本号，写入成功之后，数据版本号变为 1  
-> **ABS**：绝对版本号，不论数据是否存在，覆盖为指定的版本号    
-> **FLAGS**：类型为uint32_t，以支持 memcached 协议，超出 UINT_MAX 返回出错，缺省时默认值为 0    
-> **WITHVERSION**：修改返回值为 version 而不是"OK" 
+Parameter Description：  
+> **key**: The key used to locate the string      
+> **value**: The value of TairString to be set  
+> **EX**：Relative expiration time in seconds      
+> **EXAT**：Absolute expiration time in seconds    
+> **PX**：Relative expiration time in milliseconds    
+> **PXAT**：Millisecond absolute expiration time   
+> **NX**：Write when data does not exist  
+> **XX**：Write when data exists  
+> **VER**：Version number, if the data exists, compare it with the version number of the existing data, if it is equal, write it, and add 1 to the version number; if it is not equal, return an error; if the data does not exist, ignore the incoming version number and write After the import is successful, the data version number becomes 1  
+> **ABS**：Absolute version number, regardless of whether the data exists, overwrite the specified version number 
+> **FLAGS**：The type is uint32_t to support the memcached protocol. If UINT_MAX is exceeded, an error will be returned. The default value is 0 by default  
+> **WITHVERSION**：Modify the return value to version instead of "OK"  
  
-返回值  ：  
-> 返回类型：String    
-> 成功：OK    
-> 其他错误返回异常    
+Return value:   
+> Type：String    
+> Succuss return OK    
 
-使用示例：
+Usage example:
 ```shell
 127.0.0.1:6379> EXSET foo bar XX
 (nil)
@@ -224,25 +219,24 @@ OK
 
 ## EXGET
 
-语法及复杂度：
+Grammar and complexity：
 
 > EXGET \<key\> [WITHFLAGS]  
-> 时间复杂度：O(1)  
+> time complexity：O(1)  
 
-命令描述：
-> 返回 TairStr 的 value + version  
+Command description：  
+> return value + version  
 
-参数描述：  
-> **key**: 用于定位 TairString 的键  
-> **WITHFLAGS**: 设置该参数则会多返回一个 flags  
+Parameter Description：   
+> **key**: The key used to locate the string
+> **WITHFLAGS**: return flags  
 
-返回值：
+Return value:   
 
-> 返回类型：List<String>/List<byte[]>  
-> 成功：value+version  
-> 其他错误返回异常  
+> Type：List<String>/List<byte[]>  
+> Success：value+version  
 
-使用示例：
+Usage example：
 ```shell
 127.0.0.1:6379> EXSET foo bar ABS 100
 OK
@@ -258,25 +252,24 @@ OK
 
 ## EXSETVER
 
-语法及复杂度：
+Grammar and complexity：
 
 > EXSETVER \<key\> \<version\>  
-> 时间复杂度：O(1)  
+> time complexity：O(1)  
 
-命令描述：
-> 直接对一个 key 设置 version，类似于 EXSET ABS  
+Command description：
+> Set the version directly to a key, similar to EXSET ABS
  
-参数描述：  
-> **key**: 用于定位 TairString 的键  
-> **version**: 强制设置的 TairString 的版本号  
+Parameter Description：  
+> **key**: The key used to locate the string   
+> **version**: Version number
 
-返回值：
-> 返回类型：Long  
-> 成功：1  
-> key 不存在：0  
-> 其他错误返回异常  
+Return value：
+> Type：Long  
+> Success：1  
 
-使用示例：
+
+Usage example：
 
 ```shell
 127.0.0.1:6379> EXSET foo bar
@@ -296,35 +289,36 @@ OK
 
 ## EXINCRBY
 
-语法及复杂度：
+Grammar and complexity：
 > EXINCRBY | EXINCRBY \<key\> \<num\> [EX time][px time] [EXAT time][exat time] [PXAT time][nx | xx] [VER version | ABS version][min minval] [MAX maxval][nonegative] [WITHVERSION]
-> 时间复杂度：O(1)
+> time complexity：O(1)
 
-命令描述：  
-> 对 Key 做自增自减操作，num 的范围为 long  
+Command description：  
+> Perform auto-increment and auto-decrement operations on Key, and the range of type is long
 
-参数描述：
-> **key**: 定位 TairString 的键  
-> **num**: TairString 自增的数值，必须为自然数  
-> **EX**：秒级相对过期时间  
-> **EXAT**：秒级绝对过期时间  
-> **PX**：毫秒级相对过期时间  
-> **PXAT**：毫秒级绝对过期时间    
-> **NX**：当数据不存在时写入  
-> **XX**：当数据存在时写入    
-> **VER**：版本号，如果数据存在，和已经存在的数据的版本号做比较，如果相等，写入，并版本号加 1；如果不相等，返回出错；如果数据不存在，忽略传入的版本号，写入成功之后，数据版本号变为 1  
-> **ABS**：绝对版本号，不论数据是否存在，覆盖为指定的版本号  
-> **MIN**：TairString 值的最小值  
-> **MAX**：TairString 值的最大值  
-> **NONEGATIVE**：设置后，若 incrby 的结果小于 0 则将 value 置为 0  
-> **WITHVERSION**：额外返回一个 version  
+Parameter Description：
+> **key**: The key used to locate the string      
+> **value**: Increments the number stored at key by value
+> **EX**：Relative expiration time in seconds      
+> **EXAT**：Absolute expiration time in seconds    
+> **PX**：Relative expiration time in milliseconds    
+> **PXAT**：Millisecond absolute expiration time   
+> **NX**：Write when data does not exist  
+> **XX**：Write when data exists  
+> **VER**：Version number, if the data exists, compare it with the version number of the existing data, if it is equal, write it, and add 1 to the version number; if it is not equal, return an error; if the data does not exist, ignore the incoming version number and write After the import is successful, the data version number becomes 1  
+> **ABS**：Absolute version number, regardless of whether the data exists, overwrite the specified version number 
+> **FLAGS**：The type is uint32_t to support the memcached protocol. If UINT_MAX is exceeded, an error will be returned. The default value is 0 by default  
+> **WITHVERSION**：Modify the return value to version instead of "OK" 
+> **MIN**：The minimum value of TairString
+> **MAX**：Maximum value of TairString
+> **NONEGATIVE**：After setting, if the result of incrby is less than 0, set value to 0
+> **WITHVERSION**：return cur version number
 
-返回值：
-> 返回类型：Long  
-> 成功：引擎的 value 值  
-> 其他错误返回异常  
+Return value：
+> Type：Long  
+> Success：return value
 
-使用示例：
+Usage example：
 
 ```shell
 127.0.0.1:6379> EXINCRBY foo 100
@@ -350,34 +344,35 @@ OK
 
 ## EXINCRBYFLOAT
 
-语法及复杂度：
+Grammar and complexity：
 
 > EXINCRBYFLOAT <key> <num> [EX time][px time] [EXAT time][exat time] [PXAT time][nx | xx] [VER version | ABS version][min minval] [MAX maxval]  
-> 时间复杂度：O(1)
+> time complexity：O(1)
 
-命令描述：
-> 对 Key 做自增自减操作，num 的范围为 double
+Command description：
+> Perform auto-increment and auto-decrement operations on Key, and the range of type is double
 
-参数描述：  
-> **key**: 定位 TairString 的键  
-> **num**: TairString 自增的数值，浮点数类型  
-> **EX**：秒级相对过期时间  
-> **EXAT**：秒级绝对过期时间  
-> **PX**：毫秒级相对过期时间  
-> **PXAT**：毫秒级绝对过期时间  
-> **NX**：当数据不存在时写入  
-> **XX**：当数据存在时写入  
-> **VER**：版本号，如果数据存在，和已经存在的数据的版本号做比较，如果相等，写入，并版本号加 1；如果不相等，返回出错；如果数据不存在，忽略传入的版本号，写入成功之后，数据版本号变为 1  
-> **ABS**：绝对版本号，不论数据是否存在，覆盖为指定的版本号  
-> **MIN**：TairString 值的最小值  
-> **MAX**：TairString 值的最大值  
+Parameter Description：  
+> **key**: The key used to locate the string      
+> **value**: Increments the number stored at key by value
+> **EX**：Relative expiration time in seconds      
+> **EXAT**：Absolute expiration time in seconds    
+> **PX**：Relative expiration time in milliseconds    
+> **PXAT**：Millisecond absolute expiration time   
+> **NX**：Write when data does not exist  
+> **XX**：Write when data exists  
+> **VER**：Version number, if the data exists, compare it with the version number of the existing data, if it is equal, write it, and add 1 to the version number; if it is not equal, return an error; if the data does not exist, ignore the incoming version number and write After the import is successful, the data version number becomes 1  
+> **ABS**：Absolute version number, regardless of whether the data exists, overwrite the specified version number 
+> **FLAGS**：The type is uint32_t to support the memcached protocol. If UINT_MAX is exceeded, an error will be returned. The default value is 0 by default  
+> **WITHVERSION**：Modify the return value to version instead of "OK" 
+> **MIN**：The minimum value of TairString
+> **MAX**：Maximum value of TairString
 
-返回值：
-> 返回类型：Double  
-> 成功：引擎的 value 值  
-> 其他错误返回异常  
+Return value：
+> Type：Double  
+> Success：return cur value
 
-使用示例：
+Usage example：
 
 ```shell
 127.0.0.1:6379> EXSET foo 100
@@ -396,20 +391,19 @@ OK
 
 ## EXCAS
 
-语法及复杂度：
+Grammar and complexity：
 > EXCAS <key> <newvalue> <version>  
-> 时间复杂度：O(1)
+> time complexity：O(1)
 
-命令描述：
-> CAS（Compare And Set），对比指定 version 将 value 更新，当引擎中的 version 和指定的相同时才更新成功，不成功会返回旧的 value 和 version  
+Command description：
+> CAS（Compare And Set
 
-返回值：
-> 返回类型：List<String>/List<byte[]>  
-> 成功：["OK", "", version]，中间值""是空串无意义，version 是当前的 version  
-> 删除失败：["Err", value, version]。错误是"ERR update version is stale", value 和 version 都是引擎最新的  
-> 其他错误返回异常  
+Return value：
+> Type：List<String>/List<byte[]>  
+> Success：["OK", "", version]
+> failed：["Err", value, version]
 
-使用示例：
+Usage example：
 ```shell
 127.0.0.1:6379> EXSET foo bar
 OK
@@ -421,7 +415,7 @@ OK
 1) "bzz"
 2) (integer) 2
 127.0.0.1:6379> EXCAS foo bee 1
-1) ERR update version is stale  # 注意这里返回的是简单字符串（返回错误类型会导致 Jedis 抛异常）
+1) ERR update version is stale  
 2) "bzz"
 3) (integer) 2
 127.0.0.1:6379>
@@ -429,21 +423,20 @@ OK
 
 ## EXCAD
 
-语法及复杂度：
+Grammar and complexity：
 > EXCAD <key> <version>  
-> 时间复杂度：O(1)  
+> time complexity：O(1)  
 
-命令描述：
-> CAD（Compare And Delete），当指定 version 和引擎中 version 相等时候删除 Key，否则失败  
+Command description：
+> CAD（Compare And Delete）
 
-返回值：
-> 返回类型：Long  
-> 成功：1  
-> key 不存在：-1  
-> 删除失败：0  
-> 其他错误返回异常  
+Return value：
+> Type：Long  
+> Success：1  
+> key not exists：-1  
+> failed：0  
 
-使用示例：
+Usage example：
 ```shell
 127.0.0.1:6379> EXSET foo bar
 OK
@@ -463,138 +456,139 @@ OK
 
 ## EXAPPEND
 
-语法及复杂度：
+Grammar and complexity：
 > EXAPPEND \<key\> \<value\> [NX|XX][ver version | abs version]  
-> 时间复杂度：O(1)
+> time complexity：O(1)
 
-命令描述：
-> 对 key 做字符串 append 操作  
+Command description：
+> Append string to key
 
-参数描述：
-> **key**：定位 TairString 的键  
-> **value**：需要 append 的字符串  
-> **NX**：当数据不存在时写入  
-> **XX**：当数据存在时写入  
-> **VER**：版本号，如果数据存在，和已经存在的数据的版本号做比较，如果相等，写入，并版本号加 1；如果不相等，返回出错；如果数据不存在，忽略传入的版本号，写入成功之后，数据版本号变为 1  
-> **ABS**：绝对版本号，不论数据是否存在，覆盖为指定的版本号  
+Parameter Description：
+> **key**: The key used to locate the string      
+> **value**: The string that will be appended 
+> **NX**：Write when data does not exist  
+> **XX**：Write when data exists   
+> **VER**：Version number, if the data exists, compare it with the version number of the existing data, if it is equal, write it, and add 1 to the version number; if it is not equal, return an error; if the data does not exist, ignore the incoming version number and write After the import is successful, the data version number becomes 1  
+> **ABS**：Absolute version number, regardless of whether the data exists, overwrite the specified version number 
   
-返回值：
-> 返回类型：Long  
-> 成功：自增后的 version  
-> 其他错误返回异常  
+Return value：
+> Type：Long  
+> Success：cur version  
 
-使用示例：
+Usage example：
 ```shell
-127.0.0.1:6379> exappend exstringkey foo
-(integer) 1
-127.0.0.1:6379> exget exstringkey
-1) "foo"
-2) (integer) 1
-127.0.0.1:6379> exappend exstringkey bar
-(integer) 2
-127.0.0.1:6379> exget exstringkey
-1) "foobar"
+127.0.0.1:6379> EXSET foo bar
+OK
+127.0.0.1:6379> EXCAS foo bzz 1
+1) OK
+2)
+3) (integer) 2
+127.0.0.1:6379> EXGET foo
+1) "bzz"
 2) (integer) 2
+127.0.0.1:6379> EXCAS foo bee 1
+1) ERR update version is stale  # 注意这里返回的是简单字符串（返回错误类型会导致 Jedis 抛异常）
+2) "bzz"
+3) (integer) 2
+127.0.0.1:6379>
 ```
   
 ## EXPREPEND
 
-语法及复杂度：
+Grammar and complexity：
 
 > EXPREPEND \<key\> \<value\> [NX|XX][ver version | abs version]  
-> 时间复杂度：O(1)
+> time complexity：O(1)
 
-命令描述：
-> 对 key 做字符串 prepend 操作  
+Command description：
+> Perform string prepend operation on key
 
-参数描述：  
-> **key**：定位 TairString 的键  
-> **value**：需要 prepend 的字符串  
-> **NX**：当数据不存在时写入  
-> **XX**：当数据存在时写入  
-> **VER**：版本号，如果数据存在，和已经存在的数据的版本号做比较，如果相等，写入，并版本号加 1；如果不相等，返回出错；如果数据不存在，忽略传入的版本号，写入成功之后，数据版本号变为 1  
-> **ABS**：绝对版本号，不论数据是否存在，覆盖为指定的版本号
+Parameter Description：  
+> **key**: The key used to locate the string      
+> **value**: The value of TairString to be append  
+> **NX**：Write when data does not exist  
+> **XX**：Write when data exists  
 
-返回值：
-> 返回类型：Long  
-> 成功：自增后的 version  
-> 其他错误返回异常  
+Return value：
+> Type：Long  
+> Success：cur version   
 
-使用示例：
+Usage example：
 ```shell
-127.0.0.1:6379> exprepend exstringkey foo
-(integer) 1
-127.0.0.1:6379> exget exstringkey
-1) "foo"
-2) (integer) 1
-127.0.0.1:6379> exprepend exstringkey bar
-(integer) 2
-127.0.0.1:6379> exget exstringkey
-1) "barfoo"
+127.0.0.1:6379> EXSET foo bar
+OK
+127.0.0.1:6379> EXCAS foo bzz 1
+1) OK
+2)
+3) (integer) 2
+127.0.0.1:6379> EXGET foo
+1) "bzz"
 2) (integer) 2
+127.0.0.1:6379> EXCAS foo bee 1
+1) ERR update version is stale  
+2) "bzz"
+3) (integer) 2
+127.0.0.1:6379>
 ```
 
 ## EXGAE
 
-语法及复杂度：
+Grammar and complexity：
 
 > EXGAE \<key\> [EX time | EXAT time | PX time | PXAT time]  
-> 时间复杂度：O(1)
+> time complexity：O(1)
 
-命令描述：
+Command description：
 
 > GAE（Get And Expire），返回 TairString 的 value+version+flags，同时设置 key 的 expire. **该命令不会自增 version**  
 
-参数描述：
-> **key**：定位 TairString 的键    
-> **EX**：秒级相对过期时间     
-> **EXAT**：秒级绝对过期时间    
-> **PX**：毫秒级相对过期时间    
-> **PXAT**：毫秒级绝对过期时间    
+Parameter Description：
+> **key**: The key used to locate the string       
+> **EX**：Relative expiration time in seconds      
+> **EXAT**：Absolute expiration time in seconds    
+> **PX**：Relative expiration time in milliseconds    
+> **PXAT**：Millisecond absolute expiration time
 
-返回值：
-> 返回类型：List\<String\>/List\<byte[]\>  
-> 成功：value+version+flags  
-> 其他错误返回异常  
+Return value：
+> Type：List\<String\>/List\<byte[]\>  
+> Succuss return value+version+flags  
   
-使用示例：
+Usage example:
 ```shell
-127.0.0.1:6379> exset exstringkey foo ex 10 flags 123 WITHVERSION
-(integer) 1
-127.0.0.1:6379> ttl exstringkey
-(integer) 9
-127.0.0.1:6379> exgae exstringkey ex 20
-1) "foo"
-2) (integer) 1
-3) (integer) 123
-127.0.0.1:6379> ttl exstringkey
-(integer) 18
-127.0.0.1:6379> debug sleep 20
+127.0.0.1:6379> EXSET foo bar
 OK
-(20.00s)
-127.0.0.1:6379> ttl exstringkey
-(integer) -2
+127.0.0.1:6379> EXCAS foo bzz 1
+1) OK
+2)
+3) (integer) 2
+127.0.0.1:6379> EXGET foo
+1) "bzz"
+2) (integer) 2
+127.0.0.1:6379> EXCAS foo bee 1
+1) ERR update version is stale  # Note that what is returned here is a simple string (returning error will cause Jedis to throw an exception)
+2) "bzz"
+3) (integer) 2
 127.0.0.1:6379>
 ```
 
 <br/>
   
-## 编译及使用
+## Compile
 
 ```
 mkdir build  
 cd build  
 cmake ../ && make -j
 ```
-编译成功后会在lib目录下产生tairstring_module.so库文件
-## 测试方法
+then the tairstring_module.so library file will be generated in the lib directory
+## TEST
 
-1. 修改`tests`目录下tairstring.tcl文件中的路径为`set testmodule [file your_path/tairstring_module.so]`
-2. 将`tests`目录下tairstring.tcl文件路径加入到redis的test_helper.tcl的all_tests中
-3. 在redis根目录下运行./runtest --single tairstring
+1. Modify the path in the tairstring.tcl file in the `tests` directory to `set testmodule [file your_path/tairstring_module.so]`
+2. Add the path of the tairstring.tcl file in the `tests` directory to the all_tests of redis test_helper.tcl
+3. run ./runtest --single tairstring
 
 
 ##
-## 客户端
+## Client
 ### Java : https://github.com/aliyun/alibabacloud-tairjedis-sdk
-### 其他语言：可以参考 java 的 sendcommand 自己封装
+

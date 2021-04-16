@@ -1,5 +1,6 @@
 set testmodule [file normalize ../lib/tairstring_module.so]
 
+
 start_server {tags {"ex_string"} overrides {bind 0.0.0.0}} {
     r module load $testmodule
     test {exset basic} {
@@ -128,6 +129,12 @@ start_server {tags {"ex_string"} overrides {bind 0.0.0.0}} {
         catch {r exset exstringkey foo EXAT -1} err
         assert_match {*ERR*syntax*error*} $err
 
+        catch {r exset exstringkey foo EXAT 0} err
+        assert_match {*ERR*syntax*error*} $err
+
+        catch {r exset exstringkey foo EX 0} err
+        assert_match {*ERR*syntax*error*} $err
+
         set ret_val [r exists exstringkey ]
         assert_equal 0 $ret_val
 
@@ -152,14 +159,31 @@ start_server {tags {"ex_string"} overrides {bind 0.0.0.0}} {
 
         set ret_val [r exists exstringkey]
         assert_equal 0 $ret_val
+    }
 
-        set ret_val [r exset exstringkey foo PX 0]
+    test {exset KEEPTTL} {
+        r del exstringkey
+
+        set ret_val [r exset exstringkey foo EX 10]
         assert_equal "OK" $ret_val
 
-        after 100
+        set ttl [r ttl exstringkey]
+        assert {$ttl > 0 && $ttl <= 10}
 
-        set ret_val [r exists exstringkey]
-        assert_equal 0 $ret_val
+        set ret_val [r exset exstringkey foo]
+        assert_equal "OK" $ret_val
+
+        set ttl [r ttl exstringkey]
+        assert {$ttl == -1}
+
+        set ret_val [r exset exstringkey foo EX 10]
+        assert_equal "OK" $ret_val
+
+        set ret_val [r exset exstringkey foo KEEPTTL]
+        assert_equal "OK" $ret_val
+
+        set ttl [r ttl exstringkey]
+        assert {$ttl > 0 && $ttl <= 10}
     }
 
     test {exincrby basic} {
@@ -1376,3 +1400,4 @@ start_server {tags {"exhash repl"} overrides {bind 0.0.0.0}} {
         }
  }
 }
+

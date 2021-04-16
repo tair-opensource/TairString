@@ -52,6 +52,7 @@
 #define TAIR_STRING_SET_WITH_DEF (1 << 9)
 #define TAIR_STRING_SET_NONEGATIVE (1 << 10)
 #define TAIR_STRING_RETURN_WITH_VER (1 << 11)
+#define TAIR_STRING_SET_KEEPTTL (1 << 12)
 
 #define TAIRSTRING_ENCVER_VER_1 0
 
@@ -109,7 +110,7 @@ static int mstringcasecmp(const RedisModuleString *rs1, const char *s2) {
 static int parseAndGetExFlags(RedisModuleString **argv, int argc, int start, int *ex_flag, RedisModuleString **expire_p,
                               RedisModuleString **version_p, RedisModuleString **flags_p,
                               RedisModuleString **defaultvalue_p, RedisModuleString **min_p,
-                              RedisModuleString **max_p) {
+                              RedisModuleString **max_p, unsigned int allow_flags) {
     int j, ex_flags = TAIR_STRING_SET_NO_FLAGS;
     for (j = start; j < argc; j++) {
         RedisModuleString *next = (j == argc - 1) ? NULL : argv[j + 1];
@@ -125,14 +126,14 @@ static int parseAndGetExFlags(RedisModuleString **argv, int argc, int start, int
             }
             ex_flags |= TAIR_STRING_SET_XX;
         } else if (expire_p != NULL && !mstringcasecmp(argv[j], "ex") && next) {
-            if (ex_flags & (TAIR_STRING_SET_PX | TAIR_STRING_SET_EX)) {
+            if (ex_flags & (TAIR_STRING_SET_PX | TAIR_STRING_SET_EX | TAIR_STRING_SET_KEEPTTL)) {
                 return REDISMODULE_ERR;
             }
             ex_flags |= TAIR_STRING_SET_EX;
             *expire_p = next;
             j++;
         } else if (expire_p != NULL && !mstringcasecmp(argv[j], "exat") && next) {
-            if (ex_flags & (TAIR_STRING_SET_PX | TAIR_STRING_SET_EX)) {
+            if (ex_flags & (TAIR_STRING_SET_PX | TAIR_STRING_SET_EX | TAIR_STRING_SET_KEEPTTL)) {
                 return REDISMODULE_ERR;
             }
             ex_flags |= TAIR_STRING_SET_EX;
@@ -140,14 +141,14 @@ static int parseAndGetExFlags(RedisModuleString **argv, int argc, int start, int
             *expire_p = next;
             j++;
         } else if (expire_p != NULL && !mstringcasecmp(argv[j], "px") && next) {
-            if (ex_flags & (TAIR_STRING_SET_PX | TAIR_STRING_SET_EX)) {
+            if (ex_flags & (TAIR_STRING_SET_PX | TAIR_STRING_SET_EX | TAIR_STRING_SET_KEEPTTL)) {
                 return REDISMODULE_ERR;
             }
             ex_flags |= TAIR_STRING_SET_PX;
             *expire_p = next;
             j++;
         } else if (expire_p != NULL && !mstringcasecmp(argv[j], "pxat") && next) {
-            if (ex_flags & (TAIR_STRING_SET_PX | TAIR_STRING_SET_EX)) {
+            if (ex_flags & (TAIR_STRING_SET_PX | TAIR_STRING_SET_EX | TAIR_STRING_SET_KEEPTTL)) {
                 return REDISMODULE_ERR;
             }
             ex_flags |= TAIR_STRING_SET_PX;
@@ -200,17 +201,29 @@ static int parseAndGetExFlags(RedisModuleString **argv, int argc, int start, int
             ex_flags |= TAIR_STRING_SET_NONEGATIVE;
         } else if (!mstringcasecmp(argv[j], "withversion")) {
             ex_flags |= TAIR_STRING_RETURN_WITH_VER;
+        } else if (!mstringcasecmp(argv[j], "keepttl")) {
+            if (ex_flags & (TAIR_STRING_SET_PX | TAIR_STRING_SET_EX)) {
+                return REDISMODULE_ERR;
+            }
+            ex_flags |= TAIR_STRING_SET_KEEPTTL;
         } else {
             return REDISMODULE_ERR;
         }
     }
+
+    printf("allow_flags: %d, ex_flags: %d, res: %d\n", allow_flags, ex_flags, (~allow_flags) & ex_flags);
+
+    if ((~allow_flags) & ex_flags) {
+        return REDISMODULE_ERR;
+    }
+
     *ex_flag = ex_flags;
     return REDISMODULE_OK;
 }
 
 /* ========================= "tairstring" type commands =======================*/
 
-/* EXSET <key> <value> [EX/EXAT/PX/PXAT time] [VER/ABS version] [FLAGS flags] [WITHVERSION] */
+/* EXSET <key> <value> [EX/EXAT/PX/PXAT time] [NX/XX] [VER/ABS version] [FLAGS flags] [WITHVERSION] [KEEPTTL] */
 int TairStringTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -221,8 +234,10 @@ int TairStringTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     long long milliseconds = 0, expire = 0, version = 0, flags = 0;
     RedisModuleString *expire_p = NULL, *version_p = NULL, *flags_p = NULL;
     int ex_flags = TAIR_STRING_SET_NO_FLAGS;
-    if (parseAndGetExFlags(argv, argc, 3, &ex_flags, &expire_p, &version_p, &flags_p, NULL, NULL, NULL)
-        != REDISMODULE_OK) {
+    unsigned int allow_flags = TAIR_STRING_SET_NX | TAIR_STRING_SET_XX | TAIR_STRING_SET_EX | TAIR_STRING_SET_PX | 
+                      TAIR_STRING_SET_ABS_EXPIRE | TAIR_STRING_SET_KEEPTTL | TAIR_STRING_SET_WITH_VER |
+                      TAIR_STRING_SET_WITH_ABS_VER | TAIR_STRING_SET_WITH_FLAGS | TAIR_STRING_RETURN_WITH_VER;
+    if (parseAndGetExFlags(argv, argc, 3, &ex_flags, &expire_p, &version_p, &flags_p, NULL, NULL, NULL, allow_flags) != REDISMODULE_OK) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -242,7 +257,7 @@ int TairStringTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         return REDISMODULE_ERR;
     }
 
-    if (expire < 0 || version < 0 || flags < 0 || flags > UINT_MAX) {
+    if ((expire_p && expire <=0) || version < 0 || flags < 0 || flags > UINT_MAX) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -314,6 +329,8 @@ int TairStringTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         }
 
         RedisModule_SetExpire(key, milliseconds);
+    } else if (!(ex_flags & TAIR_STRING_SET_KEEPTTL)) {
+        RedisModule_SetExpire(key, REDISMODULE_NO_EXPIRE);
     }
 
     /* Rewrite relative value to absolute value. */
@@ -386,7 +403,7 @@ int TairStringTypeGet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
 }
 
 /* EXINCRBY <key> <num> [DEF default_value] [EX/EXAT/PX/PXAT time] [NX/XX]
- * [VER/ABS version] [MIN/MAX maxval] [NONEGATIVE] [WITHVERSION] */
+ * [VER/ABS version] [MIN/MAX maxval] [NONEGATIVE] [WITHVERSION] [KEEPTTL] */
 int TairStringTypeIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -400,9 +417,11 @@ int TairStringTypeIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **a
     RedisModuleString *expire_p = NULL, *version_p = NULL, *defaultvalue_p = NULL;
 
     int ex_flags = TAIR_STRING_SET_NO_FLAGS;
-
-    if (parseAndGetExFlags(argv, argc, 3, &ex_flags, &expire_p, &version_p, NULL, &defaultvalue_p, &min_p, &max_p)
-        != REDISMODULE_OK) {
+    unsigned int allow_flags = TAIR_STRING_SET_NX | TAIR_STRING_SET_XX | TAIR_STRING_SET_EX | TAIR_STRING_SET_PX | 
+                      TAIR_STRING_SET_ABS_EXPIRE | TAIR_STRING_SET_KEEPTTL | TAIR_STRING_SET_WITH_VER |
+                      TAIR_STRING_SET_WITH_ABS_VER  | TAIR_STRING_RETURN_WITH_VER | TAIR_STRING_SET_WITH_DEF |
+                      TAIR_STRING_SET_NONEGATIVE | TAIR_STRING_SET_WITH_BOUNDARY;
+    if (parseAndGetExFlags(argv, argc, 3, &ex_flags, &expire_p, &version_p, NULL, &defaultvalue_p, &min_p, &max_p, allow_flags) != REDISMODULE_OK) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -434,7 +453,7 @@ int TairStringTypeIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return REDISMODULE_ERR;
     }
 
-    if (expire < 0 || version < 0) {
+    if ((expire_p && expire <=0) || version < 0) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -536,6 +555,8 @@ int TairStringTypeIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **a
         }
 
         RedisModule_SetExpire(key, milliseconds);
+    } else if (!(ex_flags & TAIR_STRING_SET_KEEPTTL)) {
+        RedisModule_SetExpire(key, REDISMODULE_NO_EXPIRE);
     }
 
     if (expire_p) {
@@ -555,8 +576,7 @@ int TairStringTypeIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **a
     return REDISMODULE_OK;
 }
 
-/* EXINCRBYFLOAT <key> <num> [MIN/MAX maxval] [EX/EXAT/PX/PXAT time] [NX/XX]
- * [VER/ABS version] */
+/* EXINCRBYFLOAT <key> <num> [MIN/MAX maxval] [EX/EXAT/PX/PXAT time] [NX/XX] [VER/ABS version] [KEEPTTL] */
 int TairStringTypeIncrByFloat_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -568,7 +588,6 @@ int TairStringTypeIncrByFloat_RedisCommand(RedisModuleCtx *ctx, RedisModuleStrin
     RedisModuleString *min_p = NULL, *max_p = NULL;
     long long milliseconds = 0, expire = 0, version = 0;
     RedisModuleString *expire_p = NULL, *version_p = NULL;
-    int ex_flags = TAIR_STRING_SET_NO_FLAGS;
 
     RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
     int type = RedisModule_KeyType(key);
@@ -582,8 +601,11 @@ int TairStringTypeIncrByFloat_RedisCommand(RedisModuleCtx *ctx, RedisModuleStrin
         return REDISMODULE_ERR;
     }
 
-    if (parseAndGetExFlags(argv, argc, 3, &ex_flags, &expire_p, &version_p, NULL, NULL, &min_p, &max_p)
-        != REDISMODULE_OK) {
+    int ex_flags = TAIR_STRING_SET_NO_FLAGS;
+    unsigned int allow_flags = TAIR_STRING_SET_NX | TAIR_STRING_SET_XX | TAIR_STRING_SET_EX | TAIR_STRING_SET_PX | 
+                      TAIR_STRING_SET_ABS_EXPIRE | TAIR_STRING_SET_KEEPTTL | TAIR_STRING_SET_WITH_VER |
+                      TAIR_STRING_SET_WITH_ABS_VER | TAIR_STRING_SET_WITH_BOUNDARY;
+    if (parseAndGetExFlags(argv, argc, 3, &ex_flags, &expire_p, &version_p, NULL, NULL, &min_p, &max_p, allow_flags) != REDISMODULE_OK) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -598,7 +620,7 @@ int TairStringTypeIncrByFloat_RedisCommand(RedisModuleCtx *ctx, RedisModuleStrin
         return REDISMODULE_ERR;
     }
 
-    if (expire < 0 || version < 0) {
+    if ((expire_p && expire <=0) || version < 0) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -688,6 +710,8 @@ int TairStringTypeIncrByFloat_RedisCommand(RedisModuleCtx *ctx, RedisModuleStrin
         }
 
         RedisModule_SetExpire(key, milliseconds);
+    } else if (!(ex_flags & TAIR_STRING_SET_KEEPTTL)) {
+        RedisModule_SetExpire(key, REDISMODULE_NO_EXPIRE);
     }
 
     if (expire_p) {
@@ -745,7 +769,7 @@ int TairStringTypeExSetVer_RedisCommand(RedisModuleCtx *ctx, RedisModuleString *
     return REDISMODULE_OK;
 }
 
-/* EXCAS <key> <new_value> <version> [EX/EXAT/PX/PXAT time] */
+/* EXCAS <key> <new_value> <version> [EX/EXAT/PX/PXAT time] [KEEPTTL] */
 int TairStringTypeExCas_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -757,8 +781,8 @@ int TairStringTypeExCas_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     long long milliseconds = 0, expire = 0;
     RedisModuleString *expire_p = NULL;
     int ex_flags = TAIR_STRING_SET_NO_FLAGS;
-
-    if (parseAndGetExFlags(argv, argc, 4, &ex_flags, &expire_p, NULL, NULL, NULL, NULL, NULL) != REDISMODULE_OK) {
+    unsigned int allow_flags = TAIR_STRING_SET_EX | TAIR_STRING_SET_PX | TAIR_STRING_SET_ABS_EXPIRE | TAIR_STRING_SET_KEEPTTL;
+    if (parseAndGetExFlags(argv, argc, 4, &ex_flags, &expire_p, NULL, NULL, NULL, NULL, NULL, allow_flags) != REDISMODULE_OK) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -773,7 +797,7 @@ int TairStringTypeExCas_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         return REDISMODULE_ERR;
     }
 
-    if (expire < 0 || version < 0) {
+    if ((expire_p && expire <=0) || version < 0) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -830,6 +854,8 @@ int TairStringTypeExCas_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         }
 
         RedisModule_SetExpire(key, milliseconds);
+    } else if (!(ex_flags & TAIR_STRING_SET_KEEPTTL)) {
+        RedisModule_SetExpire(key, REDISMODULE_NO_EXPIRE);
     }
 
     if (expire_p) {
@@ -934,7 +960,7 @@ int StringTypeCad_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     return REDISMODULE_OK;
 }
 
-/* CAS <Key> <oldvalue> <newvalue> [EX/EXAT/PX/PXAT time] */
+/* CAS <Key> <oldvalue> <newvalue> [EX/EXAT/PX/PXAT time] [KEEPTTL] */
 int StringTypeCas_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -945,7 +971,8 @@ int StringTypeCas_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     long long milliseconds = 0, expire = 0;
     RedisModuleString *expire_p = NULL;
     int ex_flags = TAIR_STRING_SET_NO_FLAGS;
-    if (parseAndGetExFlags(argv, argc, 4, &ex_flags, &expire_p, NULL, NULL, NULL, NULL, NULL) != REDISMODULE_OK) {
+    unsigned int allow_flags = TAIR_STRING_SET_EX | TAIR_STRING_SET_PX | TAIR_STRING_SET_ABS_EXPIRE | TAIR_STRING_SET_KEEPTTL;
+    if (parseAndGetExFlags(argv, argc, 4, &ex_flags, &expire_p, NULL, NULL, NULL, NULL, NULL, allow_flags) != REDISMODULE_OK) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -955,7 +982,7 @@ int StringTypeCas_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         return REDISMODULE_ERR;
     }
 
-    if (expire < 0) {
+    if ((expire_p && expire <=0)) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -1007,6 +1034,8 @@ int StringTypeCas_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
         }
 
         RedisModule_SetExpire(key, milliseconds);
+    } else if (!(ex_flags & TAIR_STRING_SET_KEEPTTL)) {
+        RedisModule_SetExpire(key, REDISMODULE_NO_EXPIRE);
     }
 
     RedisModule_Replicate(ctx, "SET", "ss", argv[1], argv[3]);
@@ -1018,7 +1047,7 @@ int StringTypeCas_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, in
     return REDISMODULE_OK;
 }
 
-/* EXPREPEND <key> <value>  [NX|XX] [VER/ABS version] */
+/* EXPREPEND <key> <value> [NX|XX] [VER/ABS version] */
 int TairStringTypeExPrepend_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv, int argc) {
     RedisModule_AutoMemory(ctx);
 
@@ -1029,8 +1058,8 @@ int TairStringTypeExPrepend_RedisCommand(RedisModuleCtx *ctx, RedisModuleString 
     RedisModuleString *version_p = NULL;
     long long version = 0;
     int ex_flags = TAIR_STRING_SET_NO_FLAGS;
-
-    if (parseAndGetExFlags(argv, argc, 3, &ex_flags, NULL, &version_p, NULL, NULL, NULL, NULL) != REDISMODULE_OK) {
+    unsigned int allow_flags = TAIR_STRING_SET_NX | TAIR_STRING_SET_XX | TAIR_STRING_SET_WITH_VER | TAIR_STRING_SET_WITH_ABS_VER;
+    if (parseAndGetExFlags(argv, argc, 3, &ex_flags, NULL, &version_p, NULL, NULL, NULL, NULL, allow_flags) != REDISMODULE_OK) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -1124,8 +1153,8 @@ int TairStringTypeExAppend_RedisCommand(RedisModuleCtx *ctx, RedisModuleString *
     RedisModuleString *version_p = NULL;
     long long version = 0;
     int ex_flags = TAIR_STRING_SET_NO_FLAGS;
-
-    if (parseAndGetExFlags(argv, argc, 3, &ex_flags, NULL, &version_p, NULL, NULL, NULL, NULL) != REDISMODULE_OK) {
+    unsigned int allow_flags = TAIR_STRING_SET_NX | TAIR_STRING_SET_XX | TAIR_STRING_SET_WITH_VER | TAIR_STRING_SET_WITH_ABS_VER;
+    if (parseAndGetExFlags(argv, argc, 3, &ex_flags, NULL, &version_p, NULL, NULL, NULL, NULL, allow_flags) != REDISMODULE_OK) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -1202,16 +1231,22 @@ int TairStringTypeExGAE_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
     if (argc < 4) {
         return RedisModule_WrongArity(ctx);
     }
-
-    int ex_flags = TAIR_STRING_SET_NO_FLAGS;
+ 
     RedisModuleString *expire_p;
     long long expire = 0, milliseconds = 0;
-    if (parseAndGetExFlags(argv, argc, 2, &ex_flags, &expire_p, NULL, NULL, NULL, NULL, NULL) != REDISMODULE_OK) {
+    int ex_flags = TAIR_STRING_SET_NO_FLAGS;
+    unsigned int allow_flags = TAIR_STRING_SET_EX | TAIR_STRING_SET_PX | TAIR_STRING_SET_ABS_EXPIRE;
+    if (parseAndGetExFlags(argv, argc, 2, &ex_flags, &expire_p, NULL, NULL, NULL, NULL, NULL, allow_flags) != REDISMODULE_OK) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
 
     if (RedisModule_StringToLongLong(expire_p, &expire) != REDISMODULE_OK) {
+        RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
+        return REDISMODULE_ERR;
+    }
+
+    if ((expire_p && expire <=0)) {
         RedisModule_ReplyWithError(ctx, TAIRSTRING_ERRORMSG_SYNTAX);
         return REDISMODULE_ERR;
     }
@@ -1226,6 +1261,7 @@ int TairStringTypeExGAE_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         RedisModule_ReplyWithNull(ctx);
         return REDISMODULE_OK;
     }
+
     if (expire_p) {
         if (ex_flags & TAIR_STRING_SET_EX) {
             expire *= 1000;
@@ -1241,6 +1277,7 @@ int TairStringTypeExGAE_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
 
         RedisModule_SetExpire(key, milliseconds);
     }
+
     RedisModule_SetExpire(key, expire);
 
     TairStringObj *o = RedisModule_ModuleTypeGetValue(key);

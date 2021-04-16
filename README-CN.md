@@ -1,7 +1,7 @@
 
 # TairString
 
-## Introduction  [英文说明](README.md)
+## 简介  [英文说明](README.md)
 TairString 是阿里巴巴 Tair 团队开发并开源的一个 redis module，主要包含两个功能：
 
 - 对 redis 原生 string 进行功能增强，增加了 CAS/CAD 两个命令

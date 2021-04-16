@@ -1,6 +1,5 @@
 set testmodule [file normalize ../lib/tairstring_module.so]
 
-
 start_server {tags {"ex_string"} overrides {bind 0.0.0.0}} {
     r module load $testmodule
     test {exset basic} {
@@ -184,6 +183,19 @@ start_server {tags {"ex_string"} overrides {bind 0.0.0.0}} {
 
         set ttl [r ttl exstringkey]
         assert {$ttl > 0 && $ttl <= 10}
+    }
+
+    test {unsupported flags} {
+        r del exstringkey
+
+        catch {r exset exstringkey foo EX 10 max 10} err
+        assert_match {*ERR*syntax*error*} $err
+
+        catch {r exincrbyfloat exstringkey 1.0 def 300} err
+        assert_match {*ERR*syntax*error*} $err
+
+        catch {r exincrbyfloat exstringkey 1.0 WITHVERSION} err
+        assert_match {*ERR*syntax*error*} $err
     }
 
     test {exincrby basic} {
@@ -1400,4 +1412,3 @@ start_server {tags {"exhash repl"} overrides {bind 0.0.0.0}} {
         }
  }
 }
-

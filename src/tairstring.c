@@ -210,9 +210,7 @@ static int parseAndGetExFlags(RedisModuleString **argv, int argc, int start, int
             return REDISMODULE_ERR;
         }
     }
-
-    printf("allow_flags: %d, ex_flags: %d, res: %d\n", allow_flags, ex_flags, (~allow_flags) & ex_flags);
-
+    
     if ((~allow_flags) & ex_flags) {
         return REDISMODULE_ERR;
     }

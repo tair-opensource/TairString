@@ -261,7 +261,7 @@ int TairStringTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     }
 
     TairStringObj *tair_string_obj = NULL;
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_WRITE);
     int type = RedisModule_KeyType(key);
     if (REDISMODULE_KEYTYPE_EMPTY == type) {
         if (ex_flags & TAIR_STRING_SET_XX) {
@@ -424,7 +424,7 @@ int TairStringTypeIncrBy_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **a
         return REDISMODULE_ERR;
     }
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_WRITE);
     int type = RedisModule_KeyType(key);
     if (REDISMODULE_KEYTYPE_EMPTY != type && RedisModule_ModuleTypeGetType(key) != TairStringType) {
         RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
@@ -587,7 +587,7 @@ int TairStringTypeIncrByFloat_RedisCommand(RedisModuleCtx *ctx, RedisModuleStrin
     long long milliseconds = 0, expire = 0, version = 0;
     RedisModuleString *expire_p = NULL, *version_p = NULL;
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_WRITE);
     int type = RedisModule_KeyType(key);
     if (REDISMODULE_KEYTYPE_EMPTY != type && RedisModule_ModuleTypeGetType(key) != TairStringType) {
         RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
@@ -733,7 +733,7 @@ int TairStringTypeExSetVer_RedisCommand(RedisModuleCtx *ctx, RedisModuleString *
 
     long long version = 0;
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_WRITE);
     int type = RedisModule_KeyType(key);
     if (REDISMODULE_KEYTYPE_EMPTY != type && RedisModule_ModuleTypeGetType(key) != TairStringType) {
         RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
@@ -881,7 +881,7 @@ int TairStringTypeExCad_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
 
     long long version = 0;
 
-    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_READ | REDISMODULE_WRITE);
+    RedisModuleKey *key = RedisModule_OpenKey(ctx, argv[1], REDISMODULE_WRITE);
     int type = RedisModule_KeyType(key);
     if (REDISMODULE_KEYTYPE_EMPTY != type && RedisModule_ModuleTypeGetType(key) != TairStringType) {
         RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);

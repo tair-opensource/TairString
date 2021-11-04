@@ -590,6 +590,10 @@ cd build
 cmake ../ && make -j
 ```
 编译成功后会在lib目录下产生tairstring_module.so库文件
+
+```
+./redis-server --loadmodule /path/to/tairstring_module.so
+```
 ## 测试方法
 
 1. 修改`tests`目录下tairstring.tcl文件中的路径为`set testmodule [file your_path/tairstring_module.so]`

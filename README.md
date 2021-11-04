@@ -581,6 +581,10 @@ cd build
 cmake ../ && make -j
 ```
 then the tairstring_module.so library file will be generated in the lib directory
+
+```
+./redis-server --loadmodule /path/to/tairstring_module.so
+```
 ## TEST
 
 1. Modify the path in the tairstring.tcl file in the `tests` directory to `set testmodule [file your_path/tairstring_module.so]`

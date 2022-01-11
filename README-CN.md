@@ -1,5 +1,11 @@
+![](https://img.shields.io/badge/license-Apache--2.0-green)
+![](https://img.shields.io/badge/build-pass-green)
+![](https://img.shields.io/badge/PRs-welcome-green)
+   
 
-# TairString
+<div align=center>
+<img src="imgs/tairstring_logo.jpg" width="500"/>
+</div>
 
 ## 简介  [英文说明](README.md)
 TairString 是阿里巴巴 Tair 团队开发并开源的一个 redis module，主要包含两个功能：

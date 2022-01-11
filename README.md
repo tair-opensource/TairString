@@ -1,4 +1,11 @@
-# TairString
+![](https://img.shields.io/badge/license-Apache--2.0-green)
+![](https://img.shields.io/badge/build-pass-green)
+![](https://img.shields.io/badge/PRs-welcome-green)
+   
+
+<div align=center>
+<img src="imgs/tairstring_logo.jpg" width="500"/>
+</div>
 
 ## Introduction  [中文说明](README-CN.md)
 TairString is a redis module developed and open sourced by the Alibaba Tair team, which mainly contains two functions:

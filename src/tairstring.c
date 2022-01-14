@@ -1276,8 +1276,6 @@ int TairStringTypeExGAE_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         RedisModule_SetExpire(key, milliseconds);
     }
 
-    RedisModule_SetExpire(key, expire);
-
     TairStringObj *o = RedisModule_ModuleTypeGetValue(key);
 
     RedisModule_ReplicateVerbatim(ctx);

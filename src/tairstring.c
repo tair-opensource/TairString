@@ -102,8 +102,8 @@ static int mstringcasecmp(const RedisModuleString *rs1, const char *s2) {
 }
 
 /* Parse the command **argv and get those arguments. Return ex_flags. If parsing
- * get failed, It would reply with syntax error. The first appearence would be
- * accepted if there are multiple appearences of a same group, For example: "EX
+ * get failed, It would reply with syntax error. The first appearance would be
+ * accepted if there are multiple appearance of a same group, For example: "EX
  * 3 PX 4000 EXAT 127", the "EX 3" would be accepted and the other two would be
  * ignored.
  * */
@@ -211,7 +211,7 @@ static int parseAndGetExFlags(RedisModuleString **argv, int argc, int start, int
         }
     }
     
-    if ((~allow_flags) & ex_flags) {
+if ((~allow_flags) & ex_flags) {
         return REDISMODULE_ERR;
     }
 

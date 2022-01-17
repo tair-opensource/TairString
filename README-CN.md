@@ -15,7 +15,13 @@ TairString 是阿里巴巴 Tair 团队开发并开源的一个 redis module，�
 
 <br/>
 
-同时，我们还开源了一个增强型的hash结构，它可以给field设置过期时间和版本号，具体可参见[这里](https://github.com/alibaba/TairHash)
+## 我们的modules
+
+[TairHash](https://github.com/alibaba/TairHash): 和redis hash类似，但是可以为field设置expire和version，支持高效的主动过期和被动过期   
+[TairZset](https://github.com/alibaba/TairZset): 和redis zset类似，但是支持多（最大255）维排序，同时支持incrby语义，非常适合游戏排行榜场景   
+[TairString](https://github.com/alibaba/TairString): 和redis string类似，但是支持设置expire和version，并提供CAS/CAD等实用命令，非常适用于分布式锁等场景  
+
+
 
 <br/>
 
@@ -611,11 +617,3 @@ cmake ../ && make -j
 ## 客户端
 ### Java : https://github.com/aliyun/alibabacloud-tairjedis-sdk
 ### 其他语言：可以参考 java 的 sendcommand 自己封装
-
-
-## 我们的modules
-
-[TairHash](https://github.com/alibaba/TairHash): 和redis hash类似，但是可以为field设置expire和version，支持高效的主动过期和被动过期   
-[TairZset](https://github.com/alibaba/TairZset): 和redis zset类似，但是支持多（最大255）维排序，同时支持incrby语义，非常适合游戏排行榜场景   
-[TairString](https://github.com/alibaba/TairString): 和redis string类似，但是支持设置expire和version，并提供CAS/CAD等实用命令，非常适用于分布式锁等场景  
-

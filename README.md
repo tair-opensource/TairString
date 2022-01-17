@@ -15,7 +15,11 @@ TairString is a redis module developed and open sourced by the Alibaba Tair team
 
 <br/>
 
-At the same time, we have also open sourced an enhanced hash structure, which can set the expiration time and version number for the field. For details, please refer to [here](https://github.com/alibaba/TairHash)
+### Our modules
+[TairHash](https://github.com/alibaba/TairHash): A redis module, similar to redis hash, but you can set expire and version for the field  
+[TairZset](https://github.com/alibaba/TairZset): A redis module, similar to redis zset, but you can set multiple scores for each member to support multi-dimensional sorting  
+[TairString](https://github.com/alibaba/TairString): A redis module, similar to redis string, but you can set expire and version for the value. It also provides many very useful commands, such as cas/cad, etc.  
+
 
 <br/>
 
@@ -603,9 +607,3 @@ then the tairstring_module.so library file will be generated in the lib director
 ## Client
 ### Java : https://github.com/aliyun/alibabacloud-tairjedis-sdk
 
-
-
-### Our modules
-[TairHash](https://github.com/alibaba/TairHash): A redis module, similar to redis hash, but you can set expire and version for the field  
-[TairZset](https://github.com/alibaba/TairZset): A redis module, similar to redis zset, but you can set multiple scores for each member to support multi-dimensional sorting  
-[TairString](https://github.com/alibaba/TairString): A redis module, similar to redis string, but you can set expire and version for the value. It also provides many very useful commands, such as cas/cad, etc.  

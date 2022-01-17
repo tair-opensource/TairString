@@ -1,0 +1,88 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+
+  test-ubuntu-with-redis-5:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: clone and make redis
+      run: |
+       sudo apt-get install git
+       git clone https://github.com/redis/redis
+       cd redis
+       git checkout 5.0
+       make REDIS_CFLAGS='-Werror' BUILD_TLS=no
+    - name: make tairstring
+      run: |
+       mkdir build
+       cd build
+       cmake ../
+       make 
+    - name: test
+      run: |
+        sudo apt-get install tcl8.6 tclx
+        work_path=$(pwd)
+        module_path=$work_path/lib
+        sed -e "s#your_path#$module_path#g" tests/tairstring.tcl > redis/tests/unit/type/tairstring.tcl
+        sed -i 's#unit/type/string#unit/type/tairstring#g' redis/tests/test_helper.tcl
+        cd redis
+        ./runtest --stack-logging --single unit/type/tairstring
+
+  test-ubuntu-with-redis-6:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: clone and make redis
+      run: |
+       sudo apt-get install git
+       git clone https://github.com/redis/redis
+       cd redis
+       git checkout 6.0
+       make REDIS_CFLAGS='-Werror' BUILD_TLS=no
+    - name: make tairstring
+      run: |
+       mkdir build
+       cd build
+       cmake ../
+       make 
+    - name: test
+      run: |
+        sudo apt-get install tcl8.6 tclx
+        work_path=$(pwd)
+        module_path=$work_path/lib
+        sed -e "s#your_path#$module_path#g" tests/tairstring.tcl > redis/tests/unit/type/tairstring.tcl
+        sed -i 's#unit/type/string#unit/type/tairstring#g' redis/tests/test_helper.tcl
+        cd redis
+        ./runtest --stack-logging --single unit/type/tairstring
+
+  test-ubuntu-with-redis-unstable:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: clone and make redis
+      run: |
+       sudo apt-get install git
+       git clone https://github.com/redis/redis
+       cd redis
+       git checkout unstable
+       make REDIS_CFLAGS='-Werror' BUILD_TLS=no
+    - name: make tairstring
+      run: |
+       mkdir build
+       cd build
+       cmake ../
+       make 
+    - name: test
+      run: |
+        sudo apt-get install tcl8.6 tclx
+        work_path=$(pwd)
+        module_path=$work_path/lib
+        sed -e "s#your_path#$module_path#g" tests/tairstring.tcl > redis/tests/unit/type/tairstring.tcl
+        sed -i 's#unit/type/string#unit/type/tairstring#g' redis/tests/test_helper.tcl
+        cd redis
+        ./runtest --stack-logging --single unit/type/tairstring
+
+        

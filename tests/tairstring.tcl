@@ -711,6 +711,18 @@ start_server {tags {"ex_string"} overrides {bind 0.0.0.0}} {
 
         set res [r exget exstringkey]
         assert_equal $res ""
+
+        set res [r exset exstringkey foo ]
+        assert_equal $res "OK"
+
+        set expat [expr [clock seconds] + 2]
+        set res [r exgae exstringkey exat $expat]
+        assert_equal $res "foo 1 0"
+
+        after 3000
+
+        set ret_val [r exists exstringkey]
+        assert_equal $ret_val 0
     }
 
     test {exset/exget/exincrby syntax error} {

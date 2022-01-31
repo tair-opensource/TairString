@@ -745,9 +745,6 @@ int TairStringTypeExSetVer_RedisCommand(RedisModuleCtx *ctx, RedisModuleString *
         RedisModule_ReplyWithLongLong(ctx, 0);
         return REDISMODULE_OK;
     } else {
-        if (RedisModule_ModuleTypeGetType(key) != TairStringType) {
-            return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
-        }
         tair_string_obj = RedisModule_ModuleTypeGetValue(key);
     }
 
@@ -812,9 +809,6 @@ int TairStringTypeExCas_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         RedisModule_ReplyWithLongLong(ctx, -1);
         return REDISMODULE_OK;
     } else {
-        if (RedisModule_ModuleTypeGetType(key) != TairStringType) {
-            return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
-        }
         tair_string_obj = RedisModule_ModuleTypeGetValue(key);
     }
 
@@ -898,9 +892,6 @@ int TairStringTypeExCad_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **ar
         RedisModule_ReplyWithLongLong(ctx, -1);
         return REDISMODULE_OK;
     } else {
-        if (RedisModule_ModuleTypeGetType(key) != TairStringType) {
-            return RedisModule_ReplyWithError(ctx, REDISMODULE_ERRORMSG_WRONGTYPE);
-        }
         tair_string_obj = RedisModule_ModuleTypeGetValue(key);
     }
 

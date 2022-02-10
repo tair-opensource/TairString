@@ -1,5 +1,6 @@
 ![](https://img.shields.io/badge/license-Apache--2.0-green)
-![](https://img.shields.io/badge/build-pass-green)
+[![CMake](https://github.com/alibaba/TairString/actions/workflows/cmake.yml/badge.svg)](https://github.com/alibaba/TairString/actions/workflows/cmake.yml)
+[![CI](https://github.com/alibaba/TairString/actions/workflows/ci.yml/badge.svg)](https://github.com/alibaba/TairString/actions/workflows/ci.yml)
 ![](https://img.shields.io/badge/PRs-welcome-green)
    
 

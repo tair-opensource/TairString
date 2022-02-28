@@ -2,7 +2,8 @@
 ![](https://img.shields.io/badge/PRs-welcome-green)
 [![CMake](https://github.com/alibaba/TairString/actions/workflows/cmake.yml/badge.svg)](https://github.com/alibaba/TairString/actions/workflows/cmake.yml)
 [![CI](https://github.com/alibaba/TairString/actions/workflows/ci.yml/badge.svg)](https://github.com/alibaba/TairString/actions/workflows/ci.yml)
-   
+[![Docker Image CI](https://github.com/alibaba/TairString/actions/workflows/docker-image.yml/badge.svg)](https://github.com/alibaba/TairString/actions/workflows/docker-image.yml)  
+
 
 <div align=center>
 <img src="imgs/tairstring_logo.jpg" width="500"/>

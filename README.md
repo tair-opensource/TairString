@@ -1,7 +1,7 @@
 ![](https://img.shields.io/badge/license-Apache--2.0-green)
+![](https://img.shields.io/badge/PRs-welcome-green)
 [![CMake](https://github.com/alibaba/TairString/actions/workflows/cmake.yml/badge.svg)](https://github.com/alibaba/TairString/actions/workflows/cmake.yml)
 [![CI](https://github.com/alibaba/TairString/actions/workflows/ci.yml/badge.svg)](https://github.com/alibaba/TairString/actions/workflows/ci.yml)
-![](https://img.shields.io/badge/PRs-welcome-green)
    
 
 <div align=center>
@@ -23,6 +23,49 @@ TairString is a redis module developed and open sourced by the Alibaba Tair team
 
 
 <br/>
+
+## Quick start
+
+```shell
+127.0.0.1:6379> EXSET foo 100
+OK
+127.0.0.1:6379> EXGET foo
+1) "100"
+2) (integer) 1
+127.0.0.1:6379> EXSET foo 200 VER 1
+OK
+127.0.0.1:6379> EXGET foo
+1) "200"
+2) (integer) 2
+127.0.0.1:6379> EXSET foo 300 VER 1
+(error) ERR update version is stale
+127.0.0.1:6379> EXINCRBY foo 100
+(integer) 300
+127.0.0.1:6379> EXGET foo
+1) "300"
+2) (integer) 3
+127.0.0.1:6379> EXSETVER foo 100
+(integer) 1
+127.0.0.1:6379> EXGET foo
+1) "300"
+2) (integer) 100
+127.0.0.1:6379> EXCAS foo 400 100
+1) OK
+2)
+3) (integer) 101
+127.0.0.1:6379> EXGET foo
+1) "400"
+2) (integer) 101
+127.0.0.1:6379> EXCAD foo 101
+(integer) 1
+127.0.0.1:6379> EXGET foo
+(nil)
+```
+
+## Docker
+```
+docker run -p 6379:6379 tairmodule/tairstring:latest
+```
 
 # CAS/CAD - Redis string enhancement
 
@@ -117,43 +160,6 @@ OK
 
 # exstrtype - A String with version and compatible memcached protocol
 
-## Quick start
-
-```shell
-127.0.0.1:6379> EXSET foo 100
-OK
-127.0.0.1:6379> EXGET foo
-1) "100"
-2) (integer) 1
-127.0.0.1:6379> EXSET foo 200 VER 1
-OK
-127.0.0.1:6379> EXGET foo
-1) "200"
-2) (integer) 2
-127.0.0.1:6379> EXSET foo 300 VER 1
-(error) ERR update version is stale
-127.0.0.1:6379> EXINCRBY foo 100
-(integer) 300
-127.0.0.1:6379> EXGET foo
-1) "300"
-2) (integer) 3
-127.0.0.1:6379> EXSETVER foo 100
-(integer) 1
-127.0.0.1:6379> EXGET foo
-1) "300"
-2) (integer) 100
-127.0.0.1:6379> EXCAS foo 400 100
-1) OK
-2)
-3) (integer) 101
-127.0.0.1:6379> EXGET foo
-1) "400"
-2) (integer) 101
-127.0.0.1:6379> EXCAD foo 101
-(integer) 1
-127.0.0.1:6379> EXGET foo
-(nil)
-```
 
 ## Command introduction
 

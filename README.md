@@ -173,7 +173,7 @@ OK
 | EXSETVER      | EXSETVER \<key\> \<version\>                                                                                                                                                     | Set the version directly to a key, which is equivalent to EXSET ABS                                                                 |
 | EXINCRBY      | EXINCRBY \<key\> \<num\> [EX time][px time] [EXAT time][exat time] [PXAT time][nx &#124; xx] [VER version &#124; ABS version][min minval] [MAX maxval][nonegative] [WITHVERSION] | Auto-increment or decrement the Key                             |
 | EXINCRBYFLOAT | EXINCRBYFLOAT \<key\> \<num\> [EX time][px time] [EXAT time][exat time] [PXAT time][nx &#124; xx] [VER version &#124; ABS version][min minval] [MAX maxval]                      | Do the increment and decrement operations on Key, and the range of num is double                                   |
-| EXCAS         | EXCAS \<key\> \<newvalue\> \<version\>                                                                                                                                           | Specify version to update the value. The update is successful when the version in the engine is the same as the specified one. If it fails, the old value and version will be returned      |
+| EXCAS         | EXCAS \<key\> \<newvalue\> \<version\> [EX time] [PX time] [EXAT time] [PXAT time] [KEEPTTL]                                                                                     | Specify version to update the value. The update is successful when the version in the engine is the same as the specified one. If it fails, the old value and version will be returned      |
 | EXCAD         | EXCAD \<key\> \<version\>                                                                                                                                                        | Delete the Key when the specified version is equal to the version in the engine, otherwise it will fail                                |
 | EXAPPEND      | EXAPPEND \<key\> \<value\> [NX\|XX][ver version \| abs version]                                                                                                                  | Append string to key|
 | EXPREPEND     | EXPREPEND \<key\> \<value\> [NX\|XX][ver version \| abs version]                                                                                                                 | Perform string prepend operation on key|
@@ -411,7 +411,7 @@ OK
 ## EXCAS
 
 Grammar and complexity：
-> EXCAS <key> <newvalue> <version>  
+> EXCAS <key> <newvalue> <version> [EX time] [PX time] [EXAT time] [PXAT time] [KEEPTTL]  
 > time complexity：O(1)
 
 Command description：

@@ -181,7 +181,7 @@ OK
 | EXSETVER      | EXSETVER \<key\> \<version\>                                                                                                                                                     | 直接对一个 key 设置 version，类似于 EXSET ABS                                                                     |
 | EXINCRBY      | EXINCRBY \<key\> \<num\> [EX time][px time] [EXAT time][exat time] [PXAT time][nx &#124; xx] [VER version &#124; ABS version][min minval] [MAX maxval][nonegative] [WITHVERSION] | 对 Key 做自增自减操作，num 的范围为 long。                                                                        |
 | EXINCRBYFLOAT | EXINCRBYFLOAT \<key\> \<num\> [EX time][px time] [EXAT time][exat time] [PXAT time][nx &#124; xx] [VER version &#124; ABS version][min minval] [MAX maxval]                      | 对 Key 做自增自减操作，num 的范围为 double。                                                                      |
-| EXCAS         | EXCAS \<key\> \<newvalue\> \<version\>                                                                                                                                           | 指定 version 将 value 更新，当引擎中的 version 和指定的相同时才更新成功，不成功会返回旧的 value 和 version。      |
+| EXCAS         | EXCAS \<key\> \<newvalue\> \<version\> [EX time] [PX time] [EXAT time] [PXAT time] [KEEPTTL]                                                                                     | 指定 version 将 value 更新，当引擎中的 version 和指定的相同时才更新成功，不成功会返回旧的 value 和 version。      |
 | EXCAD         | EXCAD \<key\> \<version\>                                                                                                                                                        | 当指定 version 和引擎中 version 相等时候删除 Key，否则失败。                                                      |
 | EXAPPEND      | EXAPPEND \<key\> \<value\> [NX\|XX][ver version \| abs version]                                                                                                                  | 对 key 做字符串 append 操作                                                                                       |
 | EXPREPEND     | EXPREPEND \<key\> \<value\> [NX\|XX][ver version \| abs version]                                                                                                                 | 对 key 做字符串 prepend 操作                                                                                      |
@@ -420,7 +420,7 @@ OK
 ## EXCAS
 
 语法及复杂度：
-> EXCAS <key> <newvalue> <version>  
+> EXCAS <key> <newvalue> <version> [EX time] [PX time] [EXAT time] [PXAT time] [KEEPTTL]  
 > 时间复杂度：O(1)
 
 命令描述：

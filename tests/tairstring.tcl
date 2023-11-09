@@ -1107,6 +1107,51 @@ start_server {tags {"ex_string"} overrides {bind 0.0.0.0}} {
     }
 }
 
+start_server {tags {"ex_string_repl"}} {
+    r module load $testmodule
+    r set myexkey foo
+
+    start_server {} {
+        r module load $testmodule
+
+        test {Second server should have role master at first} {
+            s role
+        } {master}
+
+        test {SLAVEOF should start with link status "down"} {
+            r slaveof [srv -1 host] [srv -1 port]
+            s master_link_status
+        } {down}
+
+        wait_for_sync r
+        test {The link status should be up} {
+            s master_link_status
+        } {up}
+
+        test {Sync should have transferred keys from master} {
+            r get myexkey
+        } {foo}
+
+        test {KEEPTTL option should retain in replcia} {
+            r -1 del myexkey
+            assert {[r -1 exset myexkey foo ex 100] eq {OK}}
+            set mttl [r -1 ttl myexkey]
+            assert {$mttl != -1 && $mttl != -2}
+            # Wait propagation
+            after 1000
+            set sttl [r ttl myexkey]
+            assert {$sttl != -1 && $sttl != -2}
+
+            assert {[r -1 exset myexkey foo2 keepttl] eq {OK}}
+            set mttl [r -1 ttl myexkey]
+            assert {$mttl != -1 && $mttl != -2}
+            after 2000
+            set sttl [r ttl myexkey]
+            assert {$sttl != -1 && $sttl != -2}
+        }
+    }
+}
+
 start_server {tags {"exhash repl"} overrides {bind 0.0.0.0}} {
     r module load $testmodule
     set slave [srv 0 client]

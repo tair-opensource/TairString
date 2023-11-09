@@ -323,7 +323,7 @@ int TairStringTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
     }
 
     /* Rewrite relative value to absolute value. */
-    size_t vlen = 4, VSIZE_MAX = 8;
+    size_t vlen = 4, VSIZE_MAX = 9;
     RedisModuleString **v = NULL;
     v = RedisModule_Calloc(sizeof(RedisModuleString *), VSIZE_MAX);
     v[0] = RedisModule_CreateStringFromString(ctx, argv[1]);
@@ -339,6 +339,9 @@ int TairStringTypeSet_RedisCommand(RedisModuleCtx *ctx, RedisModuleString **argv
         v[vlen] = RedisModule_CreateString(ctx, "FLAGS", 5);
         v[vlen + 1] = RedisModule_CreateStringFromLongLong(ctx, (long long)tair_string_obj->flags);
         vlen += 2;
+    }
+    if (ex_flags&TAIR_STRING_SET_KEEPTTL) {
+        v[vlen++] = RedisModule_CreateString(ctx, "KEEPTTL", 7);
     }
     RedisModule_Replicate(ctx, "EXSET", "v", v, vlen);
     RedisModule_Free(v);
